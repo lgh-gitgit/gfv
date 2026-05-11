@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스쿨존 사고 통계 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0c10;
+    --bg2: #13151c;
+    --bg3: #1a1d28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --text2: #8891a8;
+    --text3: #4a5068;
+    --red: #e24b4a;
+    --purple: #7f77dd;
+    --orange: #d85a30;
+    --green: #1d9e75;
+    --amber: #ba7517;
+    --red-dim: rgba(226,75,74,0.12);
+    --purple-dim: rgba(127,119,221,0.12);
+    --accent: #5b8af5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nanum Gothic', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .app-header .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .app-header .brand-icon {
+    width: 36px; height: 36px;
+    background: var(--red-dim);
+    border: 1px solid rgba(226,75,74,0.3);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .app-header .brand-text h1 {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .app-header .brand-text p {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 1px;
+  }
+  .badge-live {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--red-dim);
+    border: 1px solid rgba(226,75,74,0.25);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #f09595;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .badge-live::before {
+    content:'';
+    width: 7px; height: 7px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: blink 1.8s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  /* ── MAIN LAYOUT ── */
+  .main { max-width: 960px; margin: 0 auto; padding: 32px 24px 60px; }
+
+  /* ── SEARCH ── */
+  .search-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+  .search-card label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .search-row input[type=number] {
+    flex: 1;
+    min-width: 160px;
+    padding: 12px 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 16px;
+    font-family: 'Space Mono', monospace;
+    outline: none;
+    transition: border-color 0.2s;
+    -moz-appearance: textfield;
+  }
+  .search-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .search-row input[type=number]:focus { border-color: var(--accent); }
+  .btn {
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-family: 'Nanum Gothic', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #4070e0; transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--text2); border-color: var(--border2); }
+  .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+  .btn:active { transform: scale(0.97); }
+  .err-msg { font-size: 13px; color: #f09595; margin-top: 10px; display: none; }
+
+  /* ── YEAR SELECTOR ── */
+  .year-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .year-pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .year-pill:hover { border-color: var(--accent); color: var(--text); }
+  .year-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── RESULT SECTION ── */
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .result-year-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .result-year-badge span {
+    font-size: 13px;
+    color: var(--text3);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+  .compare-note {
+    font-size: 12px;
+    color: var(--text3);
+    background: var(--bg3);
+    border-radius: 8px;
+    padding: 5px 10px;
+  }
+
+  /* ── METRICS GRID ── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .metric-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .metric-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+  .metric-card .mc-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+  }
+  .metric-card .mc-label {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .metric-card .mc-val {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: -1px;
+  }
+  .metric-card .mc-unit {
+    font-size: 12px;
+    color: var(--text3);
+    font-weight: 400;
+    margin-left: 3px;
+    font-family: 'Nanum Gothic', sans-serif;
+  }
+  .metric-card .mc-delta {
+    font-size: 12px;
+    margin-top: 6px;
+    font-family: 'Space Mono', monospace;
+  }
+  .delta-up { color: #f09595; }
+  .delta-down { color: #5dcaa5; }
+  .delta-none { color: var(--text3); }
+
+  /* ── BAR LIST ── */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+  .bar-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-label {
+    font-size: 12px;
+    color: var(--text2);
+    width: 80px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(.22,1,.36,1);
+  }
+  .bar-num {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    width: 56px;
+    text-align: right;
+  }
+
+  /* ── CHART ── */
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .legend-swatch {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .chart-wrap { position: relative; width: 100%; height: 240px; }
+
+  /* ── TABLE ── */
+  .table-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .table-card table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+  }
+  .table-card th {
+    background: var(--bg3);
+    color: var(--text3);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 12px 16px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Nanum Gothic', sans-serif;
+  }
+  .table-card th:first-child { text-align: left; }
+  .table-card td {
+    padding: 11px 16px;
+    color: var(--text);
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-card td:first-child { text-align: left; color: var(--text2); font-family: 'Nanum Gothic', sans-serif; }
+  .table-card tr:last-child td { border-bottom: none; }
+  .table-card tr:hover td { background: var(--bg3); }
+  .table-card tr.highlight td { background: rgba(91,138,245,0.08); }
+  .table-card tr.highlight td:first-child { color: var(--accent); font-weight: 700; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text3);
+  }
+  .empty-state .emoji { font-size: 40px; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 16px; color: var(--text2); margin-bottom: 6px; }
+  .empty-state p { font-size: 13px; }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: var(--text3);
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .main { padding: 20px 16px 48px; }
+    .app-header { padding: 14px 16px; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-icon">🛡️</div>
+    <div class="brand-text">
+      <h1>스쿨존 사고 통계</h1>
+      <p>어린이 보호구역 교통사고 데이터 · 2011–2022</p>
+    </div>
+  </div>
+  <div class="badge-live">SCHOOL ZONE DATA</div>
+</header>
+
+<main class="main">
+
+  <!-- Search -->
+  <div class="search-card">
+    <label>연도 조회</label>
+    <div class="search-row">
+      <input type="number" id="yearInput" placeholder="예: 2020" min="2011" max="2022">
+      <button class="btn btn-primary" onclick="doSearch()">조회</button>
+      <button class="btn btn-ghost" onclick="resetView()">전체 보기</button>
+    </div>
+    <p class="err-msg" id="errMsg"></p>
+    <div class="year-pills" id="yearPills"></div>
+  </div>
+
+  <!-- Result area -->
+  <div id="resultArea"></div>
+
+  <hr class="divider">
+
+  <!-- Trend chart -->
+  <div class="chart-card">
+    <div class="section-title">연도별 추이 (2011 – 2022)</div>
+    <div class="chart-legend">
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--red);"></span>사고건수</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--purple);border-radius:50%;"></span>중상자수</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--green);transform:rotate(45deg);border-radius:1px;"></span>경상자수</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--amber);clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0;"></span>사망자수</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="trendChart" role="img" aria-label="2011~2022년 스쿨존 사고 추이 꺾은선 차트"></canvas>
+    </div>
+  </div>
+
+  <!-- Full data table -->
+  <div class="chart-card">
+    <div class="section-title">전체 데이터 테이블</div>
+    <div class="table-card">
+      <table id="fullTable">
+        <thead>
+          <tr>
+            <th>연도</th>
+            <th>사고건수</th>
+            <th>사망자수</th>
+            <th>중상자수</th>
+            <th>경상자수</th>
+            <th>부상신고자수</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  스쿨존 교통사고 통계 · 데이터 출처: 공공데이터 · 2011–2022 수록
+</footer>
+
+<script>
+const DATA = [
+  {발생년:2011,사고건수:737,사망자수:13,중상자수:212,경상자수:575,부상신고자수:44},
+  {발생년:2012,사고건수:671,사망자수:11,중상자수:195,경상자수:519,부상신고자수:45},
+  {발생년:2013,사고건수:712,사망자수:10,중상자수:215,경상자수:532,부상신고자수:48},
+  {발생년:2014,사고건수:585,사망자수:13,중상자수:175,경상자수:439,부상신고자수:37},
+  {발생년:2015,사고건수:541,사망자수:8,중상자수:162,경상자수:399,부상신고자수:32},
+  {발생년:2016,사고건수:480,사망자수:8,중상자수:130,경상자수:382,부상신고자수:30},
+  {발생년:2017,사고건수:479,사망자수:8,중상자수:122,경상자수:378,부상신고자수:28},
+  {발생년:2018,사고건수:435,사망자수:3,중상자수:111,경상자수:347,부상신고자수:26},
+  {발생년:2019,사고건수:567,사망자수:6,중상자수:163,경상자수:438,부상신고자수:30},
+  {발생년:2020,사고건수:483,사망자수:3,중상자수:122,경상자수:381,부상신고자수:18},
+  {발생년:2021,사고건수:523,사망자수:2,중상자수:141,경상자수:409,부상신고자수:19},
+  {발생년:2022,사고건수:509,사망자수:3,중상자수:130,경상자수:393,부상신고자수:21},
+];
+
+const STATS = [
+  {key:'사고건수',  label:'사고건수',   unit:'건', color:'#e24b4a'},
+  {key:'사망자수',  label:'사망자수',   unit:'명', color:'#7f77dd'},
+  {key:'중상자수',  label:'중상자수',   unit:'명', color:'#d85a30'},
+  {key:'경상자수',  label:'경상자수',   unit:'명', color:'#1d9e75'},
+  {key:'부상신고자수',label:'부상신고자수',unit:'명', color:'#ba7517'},
+];
+
+let selectedYear = null;
+
+/* ── Year pills ── */
+const pillsEl = document.getElementById('yearPills');
+DATA.forEach(d => {
+  const p = document.createElement('button');
+  p.className = 'year-pill';
+  p.textContent = d.발생년;
+  p.onclick = () => { document.getElementById('yearInput').value = d.발생년; doSearch(); };
+  pillsEl.appendChild(p);
+});
+
+/* ── Table ── */
+const tbody = document.getElementById('tableBody');
+DATA.forEach(d => {
+  const tr = document.createElement('tr');
+  tr.id = 'row-' + d.발생년;
+  tr.innerHTML = `<td>${d.발생년}년</td><td>${d.사고건수.toLocaleString()}</td><td>${d.사망자수.toLocaleString()}</td><td>${d.중상자수.toLocaleString()}</td><td>${d.경상자수.toLocaleString()}</td><td>${d.부상신고자수.toLocaleString()}</td>`;
+  tbody.appendChild(tr);
+});
+
+/* ── Trend Chart ── */
+const gridColor = 'rgba(255,255,255,0.05)';
+const tickColor = '#4a5068';
+const trendChart = new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: DATA.map(d => String(d.발생년)),
+    datasets: [
+      { label:'사고건수', data: DATA.map(d=>d.사고건수), borderColor:'#e24b4a', backgroundColor:'rgba(226,75,74,0.08)', borderWidth:2, pointRadius:4, pointBackgroundColor:'#e24b4a', tension:0.35, fill:false, borderDash:[] },
+      { label:'중상자수', data: DATA.map(d=>d.중상자수), borderColor:'#7f77dd', backgroundColor:'rgba(127,119,221,0.08)', borderWidth:2, pointRadius:4, pointBackgroundColor:'#7f77dd', pointStyle:'circle', tension:0.35, fill:false, borderDash:[5,3] },
+      { label:'경상자수', data: DATA.map(d=>d.경상자수), borderColor:'#1d9e75', backgroundColor:'rgba(29,158,117,0.08)', borderWidth:2, pointRadius:4, pointBackgroundColor:'#1d9e75', pointStyle:'rect', tension:0.35, fill:false, borderDash:[2,2] },
+      { label:'사망자수', data: DATA.map(d=>d.사망자수), borderColor:'#ba7517', backgroundColor:'rgba(186,117,23,0.08)', borderWidth:2, pointRadius:4, pointBackgroundColor:'#ba7517', pointStyle:'triangle', tension:0.35, fill:false, borderDash:[4,2] },
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ ticks:{color:tickColor,font:{size:11},autoSkip:false,maxRotation:45}, grid:{color:gridColor} },
+      y:{ ticks:{color:tickColor,font:{size:11},callback:v=>v.toLocaleString()}, grid:{color:gridColor} }
+    }
+  }
+});
+
+/* ── Search & Render ── */
+function doSearch() {
+  const v = document.getElementById('yearInput').value.trim();
+  const errEl = document.getElementById('errMsg');
+  errEl.style.display = 'none';
+
+  if (!v) { showErr('연도를 입력해 주세요.'); return; }
+  if (!/^\d{4}$/.test(v)) { showErr('4자리 연도를 입력해 주세요. (예: 2020)'); return; }
+  const y = parseInt(v);
+  const row = DATA.find(d => d.발생년 === y);
+  if (!row) { showErr(`${y}년 데이터가 없습니다. 2011~2022년 사이로 입력해 주세요.`); return; }
+
+  selectedYear = y;
+  updatePills(y);
+  highlightTableRow(y);
+  renderResult(row);
+  highlightChartYear(y);
+}
+
+function showErr(msg) {
+  const el = document.getElementById('errMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function resetView() {
+  selectedYear = null;
+  document.getElementById('yearInput').value = '';
+  document.getElementById('errMsg').style.display = 'none';
+  updatePills(null);
+  document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('highlight'));
+  document.getElementById('resultArea').innerHTML = '';
+  trendChart.data.datasets.forEach(ds => { ds.pointRadius = Array(DATA.length).fill(4); });
+  trendChart.update();
+}
+
+function updatePills(y) {
+  document.querySelectorAll('.year-pill').forEach(p => {
+    p.classList.toggle('active', parseInt(p.textContent) === y);
+  });
+}
+
+function highlightTableRow(y) {
+  document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('highlight'));
+  const row = document.getElementById('row-' + y);
+  if (row) { row.classList.add('highlight'); row.scrollIntoView({behavior:'smooth', block:'nearest'}); }
+}
+
+function highlightChartYear(y) {
+  const idx = DATA.findIndex(d => d.발생년 === y);
+  trendChart.data.datasets.forEach(ds => {
+    ds.pointRadius = DATA.map((_, i) => i === idx ? 8 : 3);
+    ds.pointHoverRadius = 10;
+  });
+  trendChart.update();
+}
+
+function renderResult(d) {
+  const idx = DATA.findIndex(x => x.발생년 === d.발생년);
+  const prev = idx > 0 ? DATA[idx - 1] : null;
+  const maxVal = Math.max(d.사고건수, d.경상자수);
+
+  const metricsHTML = STATS.map(s => {
+    const val = d[s.key];
+    let deltaHTML = '';
+    if (prev) {
+      const diff = val - prev[s.key];
+      const sign = diff > 0 ? '+' : '';
+      const cls = diff > 0 ? 'delta-up' : diff < 0 ? 'delta-down' : 'delta-none';
+      deltaHTML = `<div class="mc-delta ${cls}">${sign}${diff.toLocaleString()} 전년비</div>`;
+    }
+    return `<div class="metric-card">
+      <div class="mc-dot" style="background:${s.color};"></div>
+      <div class="mc-label">${s.label}</div>
+      <div class="mc-val">${val.toLocaleString()}<span class="mc-unit">${s.unit}</span></div>
+      ${deltaHTML}
+    </div>`;
+  }).join('');
+
+  const barsHTML = STATS.map(s => {
+    const pct = Math.round((d[s.key] / maxVal) * 100);
+    return `<div class="bar-row">
+      <div class="bar-label">${s.label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${s.color};"></div></div>
+      <div class="bar-num">${d[s.key].toLocaleString()}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('resultArea').innerHTML = `
+    <div class="result-header">
+      <div class="result-year-badge">📅 ${d.발생년}년<span>스쿨존 사고 현황</span></div>
+      ${prev ? `<div class="compare-note">비교: ${prev.발생년}년 대비</div>` : ''}
+    </div>
+    <div class="metrics-grid">${metricsHTML}</div>
+    <div class="section-title">항목별 비율 비교</div>
+    <div class="bar-list">${barsHTML}</div>
+  `;
+}
+</script>
+</body>
+</html>

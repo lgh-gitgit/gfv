@@ -1,0 +1,221 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.wrap{background:#0f0f13;border-radius:var(--border-radius-lg);padding:2rem 1.5rem;font-family:var(--font-sans);min-height:520px;}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;}
+.logo{font-size:15px;font-weight:500;color:#e2e0ff;letter-spacing:0.3px;}
+.logo i{color:#7F77DD;margin-right:6px;font-size:17px;}
+.badge{font-size:11px;padding:4px 10px;border-radius:20px;background:#1e1b3a;color:#AFA9EC;border:0.5px solid #3C3489;}
+.category-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;}
+.cat-btn{padding:6px 14px;border-radius:20px;border:0.5px solid #2a2a3a;background:#16161f;color:#888799;font-size:12px;cursor:pointer;transition:all 0.15s;}
+.cat-btn:hover,.cat-btn.active{background:#1e1b3a;border-color:#534AB7;color:#CECBF6;}
+.q-card{background:#16161f;border:0.5px solid #2a2a3a;border-radius:var(--border-radius-lg);padding:1.5rem;margin-bottom:1rem;}
+.q-meta{display:flex;align-items:center;gap:8px;margin-bottom:1rem;}
+.q-num{font-size:11px;color:#5F5E5A;}
+.q-diff{font-size:11px;padding:2px 8px;border-radius:10px;}
+.diff-easy{background:#173404;color:#97C459;}
+.diff-medium{background:#412402;color:#EF9F27;}
+.diff-hard{background:#501313;color:#F09595;}
+.q-text{font-size:15px;color:#e2e0ff;line-height:1.6;margin-bottom:1.25rem;}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.opt-btn{padding:10px 14px;border-radius:var(--border-radius-md);border:0.5px solid #2a2a3a;background:#0f0f13;color:#b0adc8;font-size:13px;cursor:pointer;text-align:left;transition:all 0.15s;line-height:1.4;}
+.opt-btn:hover:not(:disabled){border-color:#534AB7;background:#1a1830;color:#e2e0ff;}
+.opt-btn.correct{border-color:#3B6D11;background:#173404;color:#97C459;}
+.opt-btn.wrong{border-color:#A32D2D;background:#501313;color:#F09595;}
+.opt-btn:disabled{cursor:default;}
+.explain-box{background:#1a1830;border-left:2px solid #534AB7;border-radius:0 var(--border-radius-md) var(--border-radius-md) 0;padding:12px 14px;margin-top:12px;font-size:13px;color:#AFA9EC;line-height:1.6;}
+.explain-box i{color:#7F77DD;margin-right:6px;}
+.action-row{display:flex;align-items:center;justify-content:space-between;margin-top:1rem;}
+.next-btn{padding:9px 20px;border-radius:var(--border-radius-md);background:#1e1b3a;border:0.5px solid #534AB7;color:#CECBF6;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;}
+.next-btn:hover{background:#2a2460;}
+.next-btn:disabled{opacity:0.35;cursor:default;}
+.score-row{display:flex;gap:16px;}
+.score-item{font-size:12px;color:#5F5E5A;}
+.score-item span{color:#AFA9EC;font-weight:500;margin-left:4px;}
+.progress-bar{height:3px;background:#1e1b2e;border-radius:2px;margin-bottom:1.5rem;overflow:hidden;}
+.progress-fill{height:100%;background:#534AB7;border-radius:2px;transition:width 0.4s;}
+.loading-state{text-align:center;padding:2.5rem 0;color:#5F5E5A;font-size:13px;}
+.loading-state i{display:block;font-size:28px;color:#534AB7;margin-bottom:8px;}
+.result-card{background:#16161f;border:0.5px solid #2a2a3a;border-radius:var(--border-radius-lg);padding:2rem;text-align:center;}
+.result-score{font-size:44px;font-weight:500;color:#e2e0ff;margin:12px 0 4px;}
+.result-label{font-size:13px;color:#5F5E5A;}
+.result-msg{font-size:14px;color:#AFA9EC;margin:12px 0 1.5rem;line-height:1.6;}
+.restart-btn{padding:10px 24px;border-radius:var(--border-radius-md);background:#1e1b3a;border:0.5px solid #534AB7;color:#CECBF6;font-size:13px;font-weight:500;cursor:pointer;}
+.restart-btn:hover{background:#2a2460;}
+.api-note{margin-top:1.5rem;padding:10px 14px;border-radius:var(--border-radius-md);border:0.5px solid #1e1e2e;background:#0c0c10;}
+.api-note-title{font-size:10px;color:#444441;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+.api-entry{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;}
+.api-dot{width:5px;height:5px;border-radius:50%;background:#534AB7;margin-top:5px;flex-shrink:0;}
+.api-dot.green{background:#3B6D11;}
+.api-text{font-size:11px;color:#444441;line-height:1.5;}
+.api-text b{color:#5F5E5A;font-weight:500;}
+</style>
+
+<h2 class="sr-only">AI 학습 퀴즈 앱 — 카테고리를 선택하면 Claude API가 문제를 생성합니다.</h2>
+
+<div class="wrap">
+  <div class="top-bar">
+    <div class="logo"><i class="ti ti-brain" aria-hidden="true"></i>ai quiz</div>
+    <div class="badge" id="badge">카테고리를 선택하세요</div>
+  </div>
+
+  <div class="category-row" id="cats">
+    <button class="cat-btn" onclick="selectCat(this,'과학')"><i class="ti ti-flask" aria-hidden="true"></i> 과학</button>
+    <button class="cat-btn" onclick="selectCat(this,'역사')"><i class="ti ti-building-arch" aria-hidden="true"></i> 역사</button>
+    <button class="cat-btn" onclick="selectCat(this,'수학')"><i class="ti ti-math" aria-hidden="true"></i> 수학</button>
+    <button class="cat-btn" onclick="selectCat(this,'IT / 기술')"><i class="ti ti-cpu" aria-hidden="true"></i> IT / 기술</button>
+    <button class="cat-btn" onclick="selectCat(this,'지리')"><i class="ti ti-map" aria-hidden="true"></i> 지리</button>
+    <button class="cat-btn" onclick="selectCat(this,'문화 / 예술')"><i class="ti ti-palette" aria-hidden="true"></i> 문화 / 예술</button>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+
+  <div id="quiz-area">
+    <div class="loading-state"><i class="ti ti-sparkles" aria-hidden="true"></i>카테고리를 선택하면 문제가 생성됩니다</div>
+  </div>
+
+  <div class="action-row">
+    <div class="score-row">
+      <div class="score-item">정답 <span id="sc-correct">0</span></div>
+      <div class="score-item">오답 <span id="sc-wrong">0</span></div>
+      <div class="score-item">문항 <span id="sc-total">0/5</span></div>
+    </div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()" disabled>다음 <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+  </div>
+
+  <div class="api-note">
+    <div class="api-note-title">사용된 API</div>
+    <div class="api-entry"><div class="api-dot"></div><div class="api-text"><b>Anthropic Messages API</b> — claude-sonnet-4-20250514 모델로 퀴즈 문제 · 보기 · 해설을 실시간 생성<br>POST api.anthropic.com/v1/messages</div></div>
+    <div class="api-entry"><div class="api-dot green"></div><div class="api-text"><b>JSON 구조화 출력</b> — system prompt로 question / options / answer / explanation 형태 JSON 반환 강제</div></div>
+  </div>
+</div>
+
+<script>
+let state = {cat:'', questions:[], idx:0, correct:0, wrong:0, answered:false, total:5};
+
+function selectCat(el, cat) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  state = {cat, questions:[], idx:0, correct:0, wrong:0, answered:false, total:5};
+  updateScore();
+  document.getElementById('badge').textContent = cat + ' · 5문제';
+  document.getElementById('prog').style.width = '0%';
+  loadQuestion();
+}
+
+function updateScore() {
+  document.getElementById('sc-correct').textContent = state.correct;
+  document.getElementById('sc-wrong').textContent = state.wrong;
+  document.getElementById('sc-total').textContent = `${state.idx}/${state.total}`;
+}
+
+async function loadQuestion() {
+  const area = document.getElementById('quiz-area');
+  area.innerHTML = '<div class="loading-state"><i class="ti ti-loader" aria-hidden="true"></i>Claude가 문제를 생성 중...</div>';
+  document.getElementById('next-btn').disabled = true;
+
+  const diffs = ['easy','medium','hard','medium','hard'];
+  const diffLabel = {easy:'쉬움', medium:'보통', hard:'어려움'};
+  const diff = diffs[state.idx] || 'medium';
+
+  const prompt = `카테고리: ${state.cat}\n난이도: ${diffLabel[diff]}\n\n위 주제의 객관식 퀴즈 문제를 1개 만들어 주세요. 이미 낸 문제와 겹치지 않게 해주세요.\n\n반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요:\n{"question":"문제","options":["A","B","C","D"],"answer":0,"explanation":"한 줄 해설"}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'You are a quiz generator. Always respond with ONLY valid JSON, no markdown, no explanation outside the JSON.',
+        messages:[{role:'user', content: prompt}]
+      })
+    });
+    const data = await res.json();
+    let raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    raw = raw.replace(/```json|```/g,'').trim();
+    const q = JSON.parse(raw);
+    q.diff = diff;
+    state.questions.push(q);
+    renderQuestion(q);
+  } catch(e) {
+    area.innerHTML = `<div class="loading-state" style="color:#F09595;"><i class="ti ti-alert-triangle" aria-hidden="true"></i>문제 생성 실패 — 다시 시도해 주세요</div>`;
+  }
+}
+
+function renderQuestion(q) {
+  const diffs = {easy:'쉬움',medium:'보통',hard:'어려움'};
+  const diffClass = {easy:'diff-easy',medium:'diff-medium',hard:'diff-hard'};
+  state.answered = false;
+
+  const opts = q.options.map((o,i) =>
+    `<button class="opt-btn" id="opt-${i}" onclick="answer(${i},${q.answer})">${o}</button>`
+  ).join('');
+
+  document.getElementById('quiz-area').innerHTML = `
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="q-num">Q${state.idx + 1}</span>
+        <span class="q-diff ${diffClass[q.diff]}">${diffs[q.diff]}</span>
+      </div>
+      <div class="q-text">${q.question}</div>
+      <div class="options">${opts}</div>
+      <div id="explain"></div>
+    </div>`;
+}
+
+function answer(chosen, correct) {
+  if (state.answered) return;
+  state.answered = true;
+
+  for (let i = 0; i < 4; i++) {
+    const b = document.getElementById(`opt-${i}`);
+    if (!b) continue;
+    b.disabled = true;
+    if (i === correct) b.classList.add('correct');
+    else if (i === chosen) b.classList.add('wrong');
+  }
+
+  if (chosen === correct) state.correct++;
+  else state.wrong++;
+
+  const q = state.questions[state.idx];
+  document.getElementById('explain').innerHTML =
+    `<div class="explain-box"><i class="ti ti-info-circle" aria-hidden="true"></i>${q.explanation}</div>`;
+
+  state.idx++;
+  updateScore();
+  document.getElementById('prog').style.width = `${(state.idx / state.total) * 100}%`;
+
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.disabled = false;
+  if (state.idx >= state.total) nextBtn.textContent = '결과 보기';
+}
+
+function nextQuestion() {
+  if (state.idx >= state.total) {
+    showResult();
+  } else {
+    loadQuestion();
+  }
+}
+
+function showResult() {
+  const pct = Math.round((state.correct / state.total) * 100);
+  const msgs = ['다음엔 더 잘할 수 있어요. 복습해보세요!', '절반은 맞혔네요! 조금만 더 공부해요.', '꽤 잘했어요! 한 번 더 도전해볼까요?', '훌륭해요! 거의 다 맞혔네요.', '완벽한 점수! 대단해요!'];
+  const msg = pct === 100 ? msgs[4] : pct >= 80 ? msgs[3] : pct >= 60 ? msgs[2] : pct >= 40 ? msgs[1] : msgs[0];
+
+  document.getElementById('quiz-area').innerHTML = `
+    <div class="result-card">
+      <div style="font-size:13px;color:#5F5E5A;">${state.cat} 퀴즈 결과</div>
+      <div class="result-score">${pct}<span style="font-size:22px;color:#534AB7;">%</span></div>
+      <div class="result-label">${state.correct}문제 정답 / ${state.total}문제</div>
+      <div class="result-msg">${msg}</div>
+      <button class="restart-btn" onclick="selectCat(document.querySelector('.cat-btn.active'), '${state.cat}')">
+        <i class="ti ti-refresh" aria-hidden="true"></i> 다시 도전
+      </button>
+    </div>`;
+  document.getElementById('next-btn').disabled = true;
+  document.getElementById('prog').style.width = '100%';
+}
+</script>
